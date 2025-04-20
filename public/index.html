@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Preference Sort</title>
+</head>
+<body>
+  <h1>Welcome!</h1>
+  <div id="namePrompt">
+    <p>Enter your name to begin:</p>
+    <input type="text" id="username" />
+    <button onclick="start()">Start</button>
+  </div>
+  <div id="choice-box" style="display:none;">
+    <h2>Which do you prefer?</h2>
+    <button id="option1" onclick="vote(0)">Option 1</button>
+    <button id="option2" onclick="vote(1)">Option 2</button>
+  </div>
+  <script>
+    let currentPair = [];
+    let sortedList = [];
+    let items = [];
+    let user = "";
+
+    async function start() {
+      user = document.getElementById("username").value.trim();
+      if (!user) {
+        alert("Please enter your name.");
+        return;
+      }
+      document.getElementById("namePrompt").style.display = "none";
+      document.getElementById("choice-box").style.display = "block";
+      const res = await fetch('/items');
+      items = await res.json();
+      sortedList = await preferenceSort(items);
+      await fetch('/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user, sorted: sortedList }),
+      });
+      document.body.innerHTML = `<h2>Thanks, ${user}!</h2><p>Your preferences have been saved.</p><pre>${sortedList.join('\n')}</pre>`;
+    }
+
+    function preferenceSort(items) {
+      return new Promise(resolve => {
+        function sort(arr) {
+          if (arr.length <= 1) return Promise.resolve(arr);
+          const mid = Math.floor(arr.length / 2);
+          return Promise.all([sort(arr.slice(0, mid)), sort(arr.slice(mid))])
+            .then(([left, right]) => merge(left, right));
+        }
+
+        function merge(left, right) {
+          let result = [];
+          let i = 0, j = 0;
+          return new Promise(done => {
+            function compareNext() {
+              if (i >= left.length && j >= right.length) return done(result);
+              if (i >= left.length) return done(result.concat(right.slice(j)));
+              if (j >= right.length) return done(result.concat(left.slice(i)));
+
+              currentPair = [left[i], right[j]];
+              document.getElementById('option1').textContent = currentPair[0];
+              document.getElementById('option2').textContent = currentPair[1];
+
+              window.vote = (choice) => {
+                if (choice === 0) {
+                  result.push(left[i++]);
+                } else {
+                  result.push(right[j++]);
+                }
+                compareNext();
+              };
+            }
+            compareNext();
+          });
+        }
+
+        sort(items).then(resolve);
+      });
+    }
+  </script>
+</body>
+</html>
