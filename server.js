@@ -1,6 +1,5 @@
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
 const app = express();
 
 app.use(express.static('public'));
@@ -12,13 +11,6 @@ app.get('/items', (req, res) => {
     .map(line => line.trim())
     .filter(Boolean);
   res.json(items);
-});
-
-app.post('/save', (req, res) => {
-  const { user, sorted } = req.body;
-  const safeName = user.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  fs.writeFileSync(`sorted_${safeName}.txt`, sorted.join('\n'));
-  res.sendStatus(200);
 });
 
 app.listen(3000, () => {

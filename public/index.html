@@ -15,6 +15,10 @@
     <button id="option1" onclick="vote(0)">Option 1</button>
     <button id="option2" onclick="vote(1)">Option 2</button>
   </div>
+  <div id="result-box" style="display:none;">
+    <h2>Your Ranked Preferences</h2>
+    <ol id="results"></ol>
+  </div>
   <script>
     let currentPair = [];
     let sortedList = [];
@@ -32,12 +36,7 @@
       const res = await fetch('/items');
       items = await res.json();
       sortedList = await preferenceSort(items);
-      await fetch('/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user, sorted: sortedList }),
-      });
-      document.body.innerHTML = `<h2>Thanks, ${user}!</h2><p>Your preferences have been saved.</p><pre>${sortedList.join('\n')}</pre>`;
+      showResults(sortedList);
     }
 
     function preferenceSort(items) {
@@ -76,6 +75,18 @@
         }
 
         sort(items).then(resolve);
+      });
+    }
+
+    function showResults(sortedList) {
+      document.getElementById("choice-box").style.display = "none";
+      document.getElementById("result-box").style.display = "block";
+      const resultsList = document.getElementById("results");
+      resultsList.innerHTML = "";
+      sortedList.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        resultsList.appendChild(li);
       });
     }
   </script>
